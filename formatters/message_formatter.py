@@ -1,12 +1,12 @@
 from typing import List
 from repositories.database_repository import Medication, Course
-from constants import MESSAGES
+from constants import Messages
 
 class MessageFormatter:
     @staticmethod
     def format_medications_list(medications: List[Medication]) -> str:
         if not medications:
-            return MESSAGES["empty_cabinet"]
+            return Messages.EMPTY_CABINET.value
         
         meds_formatted = "\n".join(
             f"{med.name} - срок годности: {med.expiry_date}, количество: {med.quantity}" for med in medications

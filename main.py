@@ -7,7 +7,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackContext, CallbackQueryHandler
 from telegram.ext import filters
 from config import TELEGRAM_BOT_TOKEN, GROQ_API_KEY, DATABASE_URI, LLM_MODEL, ALLOWED_USERS
-from constants import MESSAGES
+from constants import Messages
 from repositories.database_repository import DatabaseRepository
 from services.llm_service import GroqLLMService
 from formatters.message_formatter import MessageFormatter
@@ -26,7 +26,7 @@ def check_access(func: Callable):
         if not ALLOWED_USERS or user_id in ALLOWED_USERS:
             return await func(self, update, context)
         logger.warning(f"Попытка несанкционированного доступа от пользователя {user_id}")
-        await update.message.reply_text(MESSAGES.ACCESS_DENIED.value)
+        await update.message.reply_text(Messages.ACCESS_DENIED.value)
     return wrapper
 
 class MedicineBot:
@@ -90,7 +90,7 @@ class MedicineBot:
             await update.message.reply_text("Произошла ошибка взаимодействия с Telegram.")
         except Exception as e:
             logger.error(f"Ошибка обработки сообщения: {e}")
-            await update.message.reply_text(MESSAGES["error_processing"])
+            await update.message.reply_text(Messages.ERROR_PROCESSING.value)
 
     async def _process_message(self, user_id: int, text: str) -> str:
         """Обработка сообщения пользователя"""
@@ -156,13 +156,13 @@ class MedicineBot:
                     method = match.group(4).strip() if match.group(4) else "Не указан"
                     self.db_repository.add_course(user_id, medicine_name, dosage, schedule, method)
                     return f"Курс приема для '{medicine_name}' добавлен: дозировка {dosage}, расписание: {schedule}, метод: {method}."
-                return MESSAGES["invalid_course_format"]
+                return Messages.INVALID_COURSE_FORMAT.value
 
             return f"Не удалось определить действие. Попробуйте переформулировать запрос."
 
         except Exception as e:
             logger.error(f"Ошибка при обработке сообщения: {e}")
-            return MESSAGES["error_processing"]
+            return Messages.ERROR_PROCESSING.value
 
     @check_access
     async def button(self, update: Update, context: CallbackContext) -> None:
@@ -179,7 +179,7 @@ class MedicineBot:
                 text = self.formatter.format_courses_list(courses)
         except Exception as e:
             logger.error(f"Ошибка доступа для пользователя {user_id}: {e}")
-            text = MESSAGES["error_processing"]
+            text = Messages.ERROR_PROCESSING.value
         
         await query.edit_message_text(text=text)
 
@@ -197,7 +197,7 @@ class MedicineBot:
             elif command == "expiry_medications":
                 medications = await self.db_repository.list_medications(user_id)
                 if not medications:
-                    return MESSAGES.EMPTY_CABINET.value
+                    return Messages.EMPTY_CABINET
                 
                 today = datetime.today().date()
                 expiring_meds = []
@@ -217,7 +217,7 @@ class MedicineBot:
             
         except Exception as e:
             logger.error(f"Ошибка при обработке команды {command}: {e}")
-            return MESSAGES.ERROR_PROCESSING.value
+            return Messages.ERROR_PROCESSING.value
 
 async def main() -> None:
     bot = MedicineBot()
