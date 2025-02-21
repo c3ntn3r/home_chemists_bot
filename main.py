@@ -76,10 +76,13 @@ class MedicineBot:
             # Быстрая проверка команд без LLM
             for key, command in self._COMMANDS.items():
                 if key in text:
-                    return await self._handle_command(command, user_id)
+                    response = await self._handle_command(command, user_id)
+                    await update.message.reply_text(response)
+                    return
             
             # Остальная логика...
-            await self._process_message(user_id, text)
+            response = await self._process_message(user_id, text)
+            await update.message.reply_text(response)
             
         except TelegramError as te:
             logger.error(f"Telegram ошибка: {te}")
@@ -178,6 +181,42 @@ class MedicineBot:
             text = MESSAGES["error_processing"]
         
         await query.edit_message_text(text=text)
+
+    async def _handle_command(self, command: str, user_id: int) -> str:
+        """Обработка команд от кнопок"""
+        try:
+            if command == "list_meds":
+                medications = await self.db_repository.list_medications(user_id)
+                return self.formatter.format_medications_list(medications)
+            
+            elif command == "list_courses":
+                courses = await self.db_repository.list_courses(user_id)
+                return self.formatter.format_courses_list(courses)
+            
+            elif command == "expiry_medications":
+                medications = await self.db_repository.list_medications(user_id)
+                if not medications:
+                    return MESSAGES.EMPTY_CABINET.value
+                
+                today = datetime.today().date()
+                expiring_meds = []
+                
+                for med in medications:
+                    expiry_date = datetime.fromisoformat(med.expiry_date).date()
+                    days_to_expiry = (expiry_date - today).days
+                    if days_to_expiry > 0:
+                        expiring_meds.append(f"{med.name} - истекает через {days_to_expiry} дней")
+                
+                if not expiring_meds:
+                    return "Нет лекарств с приближающимся сроком годности."
+                
+                return "Сроки годности:\n" + "\n".join(expiring_meds)
+            
+            return "Неизвестная команда"
+            
+        except Exception as e:
+            logger.error(f"Ошибка при обработке команды {command}: {e}")
+            return MESSAGES.ERROR_PROCESSING.value
 
 async def main() -> None:
     bot = MedicineBot()
