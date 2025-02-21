@@ -1,11 +1,11 @@
 import logging
-from typing import Optional
+from typing import Optional, Callable
 import asyncio
 import aiosqlite
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, Filters, CallbackContext, CallbackQueryHandler
-from config import TELEGRAM_BOT_TOKEN, GROQ_API_KEY, DATABASE_URI, LLM_MODEL
+from config import TELEGRAM_BOT_TOKEN, GROQ_API_KEY, DATABASE_URI, LLM_MODEL, ALLOWED_USERS
 from constants import MESSAGES
 from repositories.database_repository import DatabaseRepository
 from services.llm_service import GroqLLMService
@@ -17,6 +17,16 @@ from telegram.error import TelegramError
 # Настройка логирования
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+def check_access(func: Callable):
+    """Декоратор для проверки доступа пользователя"""
+    async def wrapper(self, update: Update, context):
+        user_id = update.effective_user.id
+        if not ALLOWED_USERS or user_id in ALLOWED_USERS:
+            return await func(self, update, context)
+        logger.warning(f"Попытка несанкционированного доступа от пользователя {user_id}")
+        await update.message.reply_text(MESSAGES.ACCESS_DENIED.value)
+    return wrapper
 
 class MedicineBot:
     def __init__(self):
@@ -46,6 +56,7 @@ class MedicineBot:
             return {"name": name, "expiry_date": expiry_date, "quantity": quantity}
         return None
         
+    @check_access
     async def start(self, update: Update, context) -> None:
         keyboard = [
             ["Моя аптечка", "Мой курс лекарств"],
@@ -56,6 +67,7 @@ class MedicineBot:
             reply_markup={"keyboard": keyboard, "resize_keyboard": True}
         )
 
+    @check_access
     async def handle_message(self, update: Update, context) -> None:
         try:
             user_id = update.message.from_user.id
@@ -148,6 +160,7 @@ class MedicineBot:
             logger.error(f"Ошибка при обработке сообщения: {e}")
             return MESSAGES["error_processing"]
 
+    @check_access
     async def button(self, update: Update, context: CallbackContext) -> None:
         query = update.callback_query
         user_id = query.from_user.id

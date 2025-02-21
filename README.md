@@ -43,6 +43,7 @@ TELEGRAM_BOT_TOKEN=your_telegram_bot_token
 GROQ_API_KEY=your_groq_api_key
 DATABASE_URI=app.db
 LLM_MODEL=mixtral-8x7b-32768
+ALLOWED_USERS=123456789,987654321  # Список разрешенных Telegram ID через запятую
 ```
 
 ### Запуск
@@ -191,4 +192,11 @@ MIT License
 ## Контакты
 
 [Контактная информация для связи с разработчиками]
+
+### Ограничение доступа
+
+Бот поддерживает ограничение доступа по списку разрешенных пользователей:
+- Добавьте Telegram ID пользователей в переменную `ALLOWED_USERS` через запятую
+- Если `ALLOWED_USERS` не указан или пуст, бот доступен всем пользователям
+- Чтобы узнать свой Telegram ID, можно использовать @userinfobot
 
