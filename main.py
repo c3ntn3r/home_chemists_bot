@@ -5,7 +5,7 @@ import aiosqlite
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackContext, CallbackQueryHandler
-from telegram.ext.filters import Filters
+from telegram.ext import filters
 from config import TELEGRAM_BOT_TOKEN, GROQ_API_KEY, DATABASE_URI, LLM_MODEL, ALLOWED_USERS
 from constants import MESSAGES
 from repositories.database_repository import DatabaseRepository
@@ -224,7 +224,7 @@ async def main() -> None:
     application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
     
     application.add_handler(CommandHandler("start", bot.start))
-    application.add_handler(MessageHandler(Filters.text & ~Filters.command, bot.handle_message))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, bot.handle_message))
     application.add_handler(CallbackQueryHandler(bot.button))
     
     # Запускаем задачу напоминаний
