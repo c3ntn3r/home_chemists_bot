@@ -4,7 +4,8 @@ import asyncio
 import aiosqlite
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, MessageHandler, Filters, CallbackContext, CallbackQueryHandler
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackContext, CallbackQueryHandler
+from telegram.ext.filters import Filters
 from config import TELEGRAM_BOT_TOKEN, GROQ_API_KEY, DATABASE_URI, LLM_MODEL, ALLOWED_USERS
 from constants import MESSAGES
 from repositories.database_repository import DatabaseRepository
