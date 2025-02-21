@@ -1,4 +1,3 @@
-```markdown:README.md
 # Telegram-бот для управления домашней аптечкой
 
 Бот помогает пользователям вести учет лекарств, отслеживать сроки годности и получать рекомендации по приему медикаментов с использованием LLM (Mixtral).
@@ -20,12 +19,17 @@
 - Telegram Bot Token
 - Groq API Key
 
+Основные зависимости:
+- python-telegram-bot>=20.0
+- aiohttp>=3.8.0
+- python-dotenv>=1.0.0
+
 ### Установка
 
 1. Клонируйте репозиторий:
 ```bash
 git clone <repository-url>
-cd medicine-bot
+cd home_chemists_bot
 ```
 
 2. Установите зависимости:
@@ -37,6 +41,8 @@ pip install -r requirements.txt
 ```env
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token
 GROQ_API_KEY=your_groq_api_key
+DATABASE_URI=app.db
+LLM_MODEL=mixtral-8x7b-32768
 ```
 
 ### Запуск
@@ -49,10 +55,10 @@ python main.py
 
 ### Команды бота
 
-- `/start` - Начало работы с ботом и вывод меню с кнопками:
-  - "Моя аптечка" - просмотр списка лекарств
-  - "Мой курс лекарств" - просмотр текущих курсов
-  - "Сроки годности" - проверка лекарств с истекающим сроком годности
+- `/start` - Начало работы с ботом и вывод клавиатуры с кнопками:
+  • Моя аптечка
+  • Мой курс лекарств
+  • Сроки годности
 
 ### Основные функции
 
@@ -60,6 +66,7 @@ python main.py
 ```
 лекарство Название ММ.ГГ xКоличество
 Пример: лекарство Спазмалгон 05.24 x3
+# ММ.ГГ - месяц и год в формате ЧЧ.ГГ (например, 05.24 для мая 2024)
 ```
 
 #### 2. Добавление курса приема
@@ -76,14 +83,31 @@ python main.py
 
 ## Архитектура
 
+### Структура проекта
+
+```
+home_chemists_bot/
+├── config.py
+├── constants.py
+├── main.py
+├── requirements.txt
+├── formatters/
+│   └── message_formatter.py
+├── repositories/
+│   └── database_repository.py
+├── services/
+│   └── llm_service.py
+└── tests/
+    └── test_database_repository.py
+```
+
 ### Основные компоненты
 
 - `main.py` - Точка входа и обработка Telegram-событий
-- `llm_processing.py` - Обработка сообщений и взаимодействие с LLM
-- `database.py` - Работа с SQLite
-- `groq_api.py` - Интеграция с Groq API
 - `constants.py` - Константы и сообщения
-- `llm_service.py` - Сервис для работы с LLM
+- `llm_service.py` - Сервис для работы с LLM (включая кэширование запросов и ограничение 5 одновременных запросов)
+- `formatters/message_formatter.py` - Форматирование сообщений
+- `repositories/database_repository.py` - Работа с базой данных
 
 ### База данных
 
@@ -109,7 +133,7 @@ python main.py
 ### Тестирование
 
 ```bash
-python -m pytest test_llm_processing.py
+python -m pytest tests/test_database_repository.py
 ```
 
 ### Логирование
@@ -117,6 +141,12 @@ python -m pytest test_llm_processing.py
 Логи сохраняются в формате:
 ```
 %(asctime)s - %(name)s - %(levelname)s - %(message)s
+```
+
+По умолчанию уровень логирования установлен на INFO.
+Для изменения уровня логирования используйте переменную окружения:
+```env
+LOG_LEVEL=DEBUG  # Опционально (INFO по умолчанию)
 ```
 
 ## FAQ
@@ -137,6 +167,8 @@ python -m pytest test_llm_processing.py
 - Используйте `.env` для хранения секретных ключей
 - Регулярно обновляйте зависимости
 - Проверяйте права доступа к базе данных
+- Не публикуйте `.env` файл в репозитории
+- Добавьте `.env` в `.gitignore`
 
 ## Лицензия
 
@@ -159,6 +191,4 @@ MIT License
 ## Контакты
 
 [Контактная информация для связи с разработчиками]
-```
-=======
-# home_chemists_bot
+

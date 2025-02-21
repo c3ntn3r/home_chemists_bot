@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 import asyncio
 from aiohttp import ClientSession
-from constants import DEFAULT_MAX_TOKENS
+from constants import DEFAULT_MAX_TOKENS, MAX_CACHE_SIZE
 from functools import lru_cache
 
 class LLMService(ABC):
@@ -11,11 +11,13 @@ class LLMService(ABC):
         pass
 
 class GroqLLMService(LLMService):
-    def __init__(self, api_key: str, model: str, max_tokens: int = DEFAULT_MAX_TOKENS):
+    def __init__(self, api_key: str, model: str, max_tokens: int = DEFAULT_MAX_TOKENS, cache_size: int = MAX_CACHE_SIZE):
         self.api_key = api_key
         self.model = model
         self.max_tokens = max_tokens
         self._rate_limit = asyncio.Semaphore(5)  # Максимум 5 одновременных запросов
+        self._cache = {}
+        self._cache_size = cache_size
 
     async def get_completion(self, prompt: str) -> Optional[str]:
         if not isinstance(prompt, str) or not prompt.strip():
@@ -43,4 +45,11 @@ class GroqLLMService(LLMService):
 
     @lru_cache(maxsize=MAX_CACHE_SIZE)
     async def get_completion_cached(self, prompt: str) -> Optional[str]:
-        return await self.get_completion(prompt) 
+        cache_key = f"{self.model}:{prompt}"
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        result = await self.get_completion(prompt)
+        if result and len(self._cache) < self._cache_size:
+            self._cache[cache_key] = result
+        return result 

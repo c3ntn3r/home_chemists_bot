@@ -24,6 +24,12 @@ class MedicineBot:
         self.llm_service = GroqLLMService(GROQ_API_KEY, LLM_MODEL)
         self.formatter = MessageFormatter()
         
+        self._COMMANDS = {
+            "аптечка": "list_meds",
+            "курс": "list_courses",
+            "срок": "expiry_medications"
+        }
+        
     def _parse_medication_message(self, text: str) -> Optional[dict]:
         """Парсинг сообщения о добавлении лекарства"""
         pattern = r"лекарство\s+([\w\s\-]+)\s+(\d{2}\.\d{2})\s*x(\d+)"
@@ -53,11 +59,15 @@ class MedicineBot:
     async def handle_message(self, update: Update, context) -> None:
         try:
             user_id = update.message.from_user.id
-            text = update.message.text
+            text = update.message.text.lower()
             
-            # Обработка сообщения и получение ответа
-            response = await self._process_message(user_id, text)
-            await update.message.reply_text(response)
+            # Быстрая проверка команд без LLM
+            for key, command in self._COMMANDS.items():
+                if key in text:
+                    return await self._handle_command(command, user_id)
+            
+            # Остальная логика...
+            await self._process_message(user_id, text)
             
         except TelegramError as te:
             logger.error(f"Telegram ошибка: {te}")

@@ -3,7 +3,6 @@ from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from dataclasses import dataclass
-from models import Medication, Course  # Определите модели с использованием SQLAlchemy
 from sqlalchemy.sql import select
 
 @dataclass
@@ -35,6 +34,18 @@ AsyncSessionLocal = sessionmaker(
 )
 
 class DatabaseRepository:
+    def __init__(self, database_uri: str = DATABASE_URI):
+        self.engine = create_async_engine(database_uri, echo=True)
+        self.async_session = sessionmaker(
+            bind=self.engine,
+            class_=AsyncSession,
+            expire_on_commit=False
+        )
+
+    async def get_session(self) -> AsyncSession:
+        async with self.async_session() as session:
+            return session
+
     async def create_tables(self):
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
@@ -48,10 +59,20 @@ class DatabaseRepository:
         :param expiry_date: Дата истечения срока годности
         :param quantity: Количество
         """
-        # Реализация
+        async with AsyncSessionLocal() as session:
+            medication = Medication(
+                id=None,
+                user_id=user_id,
+                name=name,
+                expiry_date=expiry_date,
+                quantity=quantity,
+                added_date=datetime.now().isoformat()
+            )
+            session.add(medication)
+            await session.commit()
 
     async def list_medications(self, user_id: int) -> List[Medication]:
-        async with AsyncSessionLocal() as session:
+        async with self.get_session() as session:
             result = await session.execute(
                 select(Medication).where(Medication.user_id == user_id)
             )
